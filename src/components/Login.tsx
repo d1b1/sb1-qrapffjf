@@ -52,12 +52,7 @@ function Login() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="flex justify-center">
-            <img 
-              src="/assets/logo.jpg"
-              alt="Koo Capital" 
-              className="w-auto" 
-              style={{ width: '200px' }}
-            />
+            <h1 className="text-4xl font-extrabold text-gray-900 text-center">Koo Capital</h1>
           </div>
           <p className="mt-2 text-center text-sm text-gray-600">
             {mode === 'login' && 'Sign in to your account'}

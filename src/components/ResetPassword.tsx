@@ -83,12 +83,7 @@ function ResetPassword() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="flex justify-center">
-            <img 
-              src="/assets/logo.jpg"
-              alt="Koo Capital" 
-              className="w-auto h-auto"
-              style={{ width: '150px' }}
-            />
+            <h1 className="text-4xl font-extrabold text-gray-900 text-center">Koo Capital</h1>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Reset your password
