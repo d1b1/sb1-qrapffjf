@@ -1,17 +1,26 @@
 import React, { useState, useRef } from 'react';
 import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { createClient, User } from '@supabase/supabase-js';
 import Header from '../components/Header';
 import SearchTable from '../components/SearchTable';
 
-function Search() {
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
+interface SearchProps {
+  user: User | null;
+}
+
+function Search({ user }: SearchProps) {
   const [selectedCount, setSelectedCount] = useState(0);
   const navigate = useNavigate();
   const searchTableRef = useRef<{ clearSelected: () => void }>();
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    window.location.reload();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   const handleClearSelected = () => {
@@ -27,6 +36,7 @@ function Search() {
         selectedCount={selectedCount}
         onContactClick={() => navigate('/contact')}
         onClearSelected={handleClearSelected}
+        user={user}
       >
         <button
           onClick={handleLogout}

@@ -1,10 +1,16 @@
 import React, { forwardRef, useImperativeHandle } from 'react';
-import { Search, ChevronDown, X, ChevronRight, Check } from 'lucide-react';
+import { Search, ChevronDown, X, ChevronRight, Check, Star } from 'lucide-react';
 import algoliasearch from 'algoliasearch/lite';
 import { InstantSearch, SearchBox, useHits, Configure, useRefinementList, useClearRefinements, useSearchBox, useInstantSearch } from 'react-instantsearch';
 import { useDispatch, useSelector } from 'react-redux';
-import { toggleLender, clearSelectedLenders, type Lender } from '../store/lenderSlice';
+import { toggleLender, clearSelectedLenders, setActiveLead } from '../store/lenderSlice';
 import type { RootState } from '../store/store';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 const searchClient = algoliasearch(
   'W3VLJMSAS7',
@@ -20,10 +26,70 @@ function ResultsTable({ onSelectionChange }: ResultsTableProps) {
   const [expandedRows, setExpandedRows] = React.useState<Set<number>>(new Set());
   const dispatch = useDispatch();
   const selectedLenders = useSelector((state: RootState) => state.lenders.selectedLenders);
+  const activeLead = useSelector((state: RootState) => state.lenders.activeLead);
+  const [activeLeadData, setActiveLeadData] = React.useState<any>(null);
+  const [isUpdating, setIsUpdating] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchActiveLead = async () => {
+      if (activeLead) {
+        const { data } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('id', activeLead.id)
+          .single();
+        
+        if (data) {
+          setActiveLeadData(data);
+        }
+      } else {
+        setActiveLeadData(null);
+      }
+    };
+
+    fetchActiveLead();
+  }, [activeLead]);
 
   React.useEffect(() => {
     onSelectionChange(Object.keys(selectedLenders).length);
-  }, [selectedLenders, onSelectionChange]);
+
+    // Update active lead when selections change
+    const updateActiveLead = async () => {
+      if (activeLead && !isUpdating) {
+        setIsUpdating(true);
+        try {
+          const selectedLender = Object.values(selectedLenders)[0];
+          if (selectedLender) {
+            const { error } = await supabase
+              .from('leads')
+              .update({
+                lender_data: selectedLender
+              })
+              .eq('id', activeLead.id);
+
+            if (error) throw error;
+
+            // Refresh active lead data
+            const { data } = await supabase
+              .from('leads')
+              .select('*')
+              .eq('id', activeLead.id)
+              .single();
+
+            if (data) {
+              setActiveLeadData(data);
+            }
+          }
+        } catch (error) {
+          console.error('Error updating active lead:', error);
+        } finally {
+          setIsUpdating(false);
+        }
+      }
+    };
+
+    updateActiveLead();
+  }, [selectedLenders, activeLead, onSelectionChange]);
 
   const toggleRow = (index: number) => {
     const newExpandedRows = new Set(expandedRows);
@@ -36,12 +102,21 @@ function ResultsTable({ onSelectionChange }: ResultsTableProps) {
   };
 
   const handleToggleSelection = (hit: Lender) => {
+    // Clear other selections if we have an active lead
+    if (activeLead) {
+      dispatch(clearSelectedLenders());
+    }
     dispatch(toggleLender(hit));
+  };
+
+  const clearActiveLead = () => {
+    dispatch(setActiveLead(null));
+    dispatch(clearSelectedLenders());
   };
 
   return (
     <div>
-      {Object.keys(selectedLenders).length > 0 && (
+      {Object.keys(selectedLenders).length > 0 && !activeLead && (
         <div className="px-6 py-3 bg-indigo-50 border-b border-indigo-100">
           <span className="text-sm font-medium text-indigo-700">
             {Object.keys(selectedLenders).length} lender{Object.keys(selectedLenders).length !== 1 ? 's' : ''} selected
@@ -50,6 +125,46 @@ function ResultsTable({ onSelectionChange }: ResultsTableProps) {
       )}
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
+          {activeLeadData && (
+            <tr className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-y-2 border-yellow-300">
+              <td colSpan={5} className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-8">
+                    <div className="flex items-center space-x-2">
+                      <Star className="h-5 w-5 text-yellow-600 fill-yellow-500" />
+                      <span className="font-medium text-yellow-800">Active Lead:</span>
+                    </div>
+                    <div className="flex items-center space-x-8">
+                      <div>
+                        <span className="font-medium text-yellow-900">{activeLeadData.lender_data.lenderName}</span>
+                      </div>
+                      <div>
+                        <span className="text-yellow-800">
+                          ${activeLeadData.lender_data.minimumCheckSize.toLocaleString()} - 
+                          ${activeLeadData.lender_data.maximumCheckSize.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-yellow-800">{activeLeadData.lender_data.contactName}</span>
+                        <a 
+                          href={`mailto:${activeLeadData.lender_data.contactEmail}`}
+                          className="ml-2 text-yellow-900 hover:text-yellow-700 underline"
+                        >
+                          {activeLeadData.lender_data.contactEmail}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={clearActiveLead}
+                    className="text-yellow-700 hover:text-yellow-900 p-1 hover:bg-yellow-200 rounded-full transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          )}
           <tr>
             <th className="w-10 px-6 py-3"></th>
             <th className="w-10 px-6 py-3"></th>

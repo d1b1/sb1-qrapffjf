@@ -2,7 +2,11 @@
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
-    extend: {},
+    extend: {
+      borderColor: {
+        DEFAULT: '#374151', // gray-700
+      },
+    },
   },
   plugins: [],
 };

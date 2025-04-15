@@ -28,12 +28,19 @@ export interface Lender {
   minMonthsInBusinessRule: string;
 }
 
+export interface ActiveLead {
+  id: string;
+  notes: string | null;
+}
+
 interface LenderState {
   selectedLenders: Record<string, Lender>;
+  activeLead: ActiveLead | null;
 }
 
 const initialState: LenderState = {
-  selectedLenders: {}
+  selectedLenders: {},
+  activeLead: null
 };
 
 export const lenderSlice = createSlice({
@@ -53,9 +60,12 @@ export const lenderSlice = createSlice({
     },
     setSelectedLenders: (state, action: PayloadAction<Record<string, Lender>>) => {
       state.selectedLenders = action.payload;
+    },
+    setActiveLead: (state, action: PayloadAction<ActiveLead | null>) => {
+      state.activeLead = action.payload;
     }
   }
 });
 
-export const { toggleLender, clearSelectedLenders, setSelectedLenders } = lenderSlice.actions;
+export const { toggleLender, clearSelectedLenders, setSelectedLenders, setActiveLead } = lenderSlice.actions;
 export default lenderSlice.reducer;
