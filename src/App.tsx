@@ -6,6 +6,7 @@ import Contact from './pages/Contact';
 import Leads from './pages/Leads';
 import LeadDetails from './pages/LeadDetails';
 import Login from './components/Login';
+import ResetPassword from './components/ResetPassword';
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -42,7 +43,8 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) {
+  // Don't require authentication for the reset password route
+  if (!isAuthenticated && window.location.pathname !== '/reset-password') {
     return <Login />;
   }
 
@@ -53,6 +55,7 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/leads/:id" element={<LeadDetails />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </Router>
   );
