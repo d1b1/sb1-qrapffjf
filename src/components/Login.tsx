@@ -11,7 +11,8 @@ function Login() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
+  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +20,13 @@ function Login() {
     setError(null);
 
     try {
-      if (mode === 'signup') {
+      if (mode === 'reset') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setResetSent(true);
+      } else if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -48,7 +55,9 @@ function Login() {
             Koo Capital
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
+            {mode === 'login' && 'Sign in to your account'}
+            {mode === 'signup' && 'Create a new account'}
+            {mode === 'reset' && 'Reset your password'}
           </p>
         </div>
 
@@ -58,56 +67,105 @@ function Login() {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <input
-                type="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <input
-                type="password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                isLoading
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-black hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900'
-              }`}
-            >
-              {isLoading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Sign up'}
-            </button>
-          </div>
-
+        {mode === 'reset' && resetSent ? (
           <div className="text-center">
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative mb-4">
+              Check your email for password reset instructions.
+            </div>
             <button
               type="button"
-              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+              onClick={() => {
+                setMode('login');
+                setResetSent(false);
+              }}
               className="text-sm text-black hover:text-gray-900"
             >
-              {mode === 'login'
-                ? "Don't have an account? Sign up"
-                : 'Already have an account? Sign in'}
+              Return to login
             </button>
           </div>
-        </form>
+        ) : (
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            <div className="rounded-md shadow-sm -space-y-px">
+              <div>
+                <input
+                  type="email"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              {mode !== 'reset' && (
+                <div>
+                  <input
+                    type="password"
+                    required={mode !== 'reset'}
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-black focus:border-black focus:z-10 sm:text-sm"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {mode === 'login' && (
+              <div className="flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setMode('reset')}
+                  className="text-sm text-black hover:text-gray-900"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                  isLoading
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-black hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900'
+                }`}
+              >
+                {isLoading
+                  ? 'Please wait...'
+                  : mode === 'login'
+                  ? 'Sign in'
+                  : mode === 'signup'
+                  ? 'Sign up'
+                  : 'Send reset instructions'}
+              </button>
+            </div>
+
+            <div className="text-center space-y-2">
+              <button
+                type="button"
+                onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+                className="text-sm text-black hover:text-gray-900"
+              >
+                {mode === 'login'
+                  ? "Don't have an account? Sign up"
+                  : mode === 'signup'
+                  ? 'Already have an account? Sign in'
+                  : ''}
+              </button>
+              {mode === 'reset' && (
+                <button
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className="block w-full text-sm text-black hover:text-gray-900"
+                >
+                  Back to sign in
+                </button>
+              )}
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

@@ -59,11 +59,25 @@ function ResultsTable({ onSelectionChange }: ResultsTableProps) {
         setIsUpdating(true);
         try {
           const selectedLender = Object.values(selectedLenders)[0];
-          if (selectedLender) {
+          
+          // First get the current lead data
+          const { data: currentLead } = await supabase
+            .from('leads')
+            .select('*')
+            .eq('id', activeLead.id)
+            .single();
+
+          if (currentLead) {
+            // Merge the new Algolia data with existing lead data
+            const updatedLenderData = {
+              ...currentLead.lender_data,
+              ...(selectedLender || {}), // Only update with new data if there is a selection
+            };
+
             const { error } = await supabase
               .from('leads')
               .update({
-                lender_data: selectedLender
+                lender_data: updatedLenderData
               })
               .eq('id', activeLead.id);
 
